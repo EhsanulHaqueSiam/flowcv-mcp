@@ -11,7 +11,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { apiRequest, handleApiError, setSessionCookie, updateCookieEverywhere, verifyAuth } from "./api-client.js";
+import { apiRequest, handleApiError, initFromConfig, setSessionCookie, updateCookieEverywhere, verifyAuth } from "./api-client.js";
 
 const server = new McpServer({
   name: "flowcv-mcp-server",
@@ -1514,11 +1514,17 @@ async function main() {
     setSessionCookie(`flowcvsidapp=${cookie}`);
     console.error("FlowCV MCP server running (cookie set from env)");
   } else {
-    console.error(
-      "WARNING: FLOWCV_SESSION_COOKIE not set. Server starting without auth.\n" +
-        "Use the flowcv_update_cookie tool to set a cookie, or provide FLOWCV_SESSION_COOKIE env var.\n" +
-        "To get a cookie: log in to https://app.flowcv.com → DevTools (F12) → Application → Cookies → copy flowcvsidapp value."
-    );
+    // Fall back to CLI config file (~/.config/flowcv/config.json)
+    const loaded = await initFromConfig();
+    if (loaded) {
+      console.error("FlowCV MCP server running (cookie loaded from ~/.config/flowcv/config.json)");
+    } else {
+      console.error(
+        "WARNING: No session cookie found. Server starting without auth.\n" +
+          "Fix: run 'flowcv login' or set FLOWCV_SESSION_COOKIE env var.\n" +
+          "Or use the flowcv_update_cookie tool to set a cookie at runtime."
+      );
+    }
   }
 
   const transport = new StdioServerTransport();

@@ -1,97 +1,61 @@
 #!/bin/bash
-# FlowCV MCP Server + Claude Code Skill — One-command setup
-# Usage: ./setup.sh [session-cookie]
+# FlowCV — Local setup (for people who already cloned the repo)
+# Usage: ./setup.sh [--mcp]
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SKILL_DIR="$HOME/.claude/skills/flowcv"
-DIST_JS="$SCRIPT_DIR/dist/index.js"
 
-echo "=== FlowCV MCP Setup ==="
+echo ""
+echo "=== FlowCV Setup ==="
 echo ""
 
 # 1. Install & build
-echo "[1/6] Installing dependencies..."
+echo "[1/3] Installing dependencies & building..."
 cd "$SCRIPT_DIR"
 npm install --silent 2>/dev/null
-echo "[2/6] Building..."
 npm run build --silent 2>/dev/null
-echo "       Built: $DIST_JS"
 
-# 2. Install skill
-echo "[3/6] Installing Claude Code skill..."
-mkdir -p "$SKILL_DIR/references" "$SKILL_DIR/assets/src"
-cp "$SCRIPT_DIR/skill/SKILL.md" "$SKILL_DIR/SKILL.md"
-cp "$SCRIPT_DIR/skill/references/api-reference.md" "$SKILL_DIR/references/api-reference.md"
-cp "$SCRIPT_DIR/skill/references/customization-guide.md" "$SKILL_DIR/references/customization-guide.md"
-cp "$SCRIPT_DIR/src/index.ts" "$SKILL_DIR/assets/src/index.ts"
-cp "$SCRIPT_DIR/src/api-client.ts" "$SKILL_DIR/assets/src/api-client.ts"
-cp "$SCRIPT_DIR/package.json" "$SKILL_DIR/assets/package.json"
-cp "$SCRIPT_DIR/tsconfig.json" "$SKILL_DIR/assets/tsconfig.json"
-echo "       Skill installed to: $SKILL_DIR"
+# 2. Link CLI globally
+echo "[2/3] Linking CLI..."
+npm link --silent 2>/dev/null || {
+  echo "       npm link failed (may need sudo). Trying with sudo..."
+  sudo npm link --silent 2>/dev/null
+}
 
-echo "[4/6] Installing CLI skill..."
+# 3. Install skills
+echo "[3/3] Installing Claude Code skills..."
+
 CLI_SKILL_DIR="$HOME/.claude/skills/flowcv-cli"
 mkdir -p "$CLI_SKILL_DIR"
 cp "$SCRIPT_DIR/skill/cli-skill/SKILL.md" "$CLI_SKILL_DIR/SKILL.md"
-echo "       CLI skill installed to: $CLI_SKILL_DIR"
+echo "       CLI skill: $CLI_SKILL_DIR"
 
-# 3. Cookie
-COOKIE="${1:-}"
-if [ -z "$COOKIE" ]; then
-    echo ""
-    echo "[5/6] Session cookie needed."
-    echo ""
-    echo "  To get it:"
-    echo "  1. Log in to https://app.flowcv.com"
-    echo "  2. Open DevTools (F12) > Application > Cookies > app.flowcv.com"
-    echo "  3. Copy the 'flowcvsidapp' cookie value (starts with s%3A...)"
-    echo ""
-    read -rp "  Paste cookie value: " COOKIE
+if [[ "$1" == "--mcp" || "$1" == "--all" ]]; then
+  MCP_SKILL_DIR="$HOME/.claude/skills/flowcv"
+  mkdir -p "$MCP_SKILL_DIR/references" "$MCP_SKILL_DIR/assets/src"
+  cp "$SCRIPT_DIR/skill/SKILL.md" "$MCP_SKILL_DIR/SKILL.md"
+  cp "$SCRIPT_DIR/skill/references/"*.md "$MCP_SKILL_DIR/references/"
+  cp "$SCRIPT_DIR/src/index.ts" "$MCP_SKILL_DIR/assets/src/index.ts"
+  cp "$SCRIPT_DIR/src/api-client.ts" "$MCP_SKILL_DIR/assets/src/api-client.ts"
+  cp "$SCRIPT_DIR/package.json" "$MCP_SKILL_DIR/assets/package.json"
+  cp "$SCRIPT_DIR/tsconfig.json" "$MCP_SKILL_DIR/assets/tsconfig.json"
+  echo "       MCP skill: $MCP_SKILL_DIR"
 fi
 
-if [ -z "$COOKIE" ]; then
-    echo "  No cookie provided. Skipping MCP config."
-    echo "  Run again with: ./setup.sh 'your-cookie-value'"
-    echo ""
-    echo "=== Done (partial — no MCP config) ==="
-    exit 0
+echo ""
+echo "=== Done ==="
+echo ""
+echo "Next steps:"
+echo ""
+echo "  1. flowcv login            # Authenticate"
+echo ""
+
+if [[ "$1" == "--mcp" || "$1" == "--all" ]]; then
+  echo "  2. Add MCP server to Claude Code:"
+  echo "     claude mcp add -s user flowcv -- node $SCRIPT_DIR/dist/index.js"
+  echo ""
+  echo "     Or for this project only:"
+  echo "     claude mcp add flowcv -- node $SCRIPT_DIR/dist/index.js"
+  echo ""
 fi
-
-# 4. Write .mcp.json
-MCP_CONFIG="$SCRIPT_DIR/.mcp.json"
-cat > "$MCP_CONFIG" <<MCPEOF
-{
-  "mcpServers": {
-    "flowcv": {
-      "command": "node",
-      "args": ["$DIST_JS"],
-      "env": {
-        "FLOWCV_SESSION_COOKIE": "$COOKIE"
-      }
-    }
-  }
-}
-MCPEOF
-echo "       MCP config written to: $MCP_CONFIG"
-
-echo ""
-# 5. Link CLI globally
-echo "[6/6] Linking CLI..."
-cd "$SCRIPT_DIR"
-npm link --silent 2>/dev/null || true
-echo "       flowcv command available globally"
-
-echo ""
-echo "=== Setup complete ==="
-echo ""
-echo "What's installed:"
-echo "  MCP Server:  $DIST_JS"
-echo "  MCP Config:  $MCP_CONFIG"
-echo "  Skill:       $SKILL_DIR"
-echo ""
-echo "Open Claude Code in this directory and try:"
-echo '  "List my FlowCV resumes"'
-echo '  "Change my resume font to Inter"'
-echo '  "Download my resume as PDF"'

@@ -41,125 +41,28 @@ If Chrome is not available, it falls back to manual paste mode where you copy th
 - Cookies expire periodically and need to be refreshed (just run `flowcv login` again)
 - The `.mcp.json` file (which may contain the cookie for MCP server usage) is in `.gitignore`
 
-## Quick Start
+## Install the CLI
 
-### Option A: One-Command Setup
-
-```bash
-git clone https://github.com/EhsanulHaqueSiam/flowcv-mcp.git
-cd flowcv-mcp
-./setup.sh
-```
-
-This will:
-- Install dependencies and build the server
-- Install the Claude Code skill to `~/.claude/skills/flowcv/`
-- Prompt for your session cookie
-- Create `.mcp.json` with the server config
-
-If you already have your cookie:
+One-liner — clones, builds, and links the `flowcv` command globally:
 
 ```bash
-./setup.sh 's%3Ayour-cookie-value-here'
+curl -fsSL https://raw.githubusercontent.com/EhsanulHaqueSiam/flowcv-mcp/master/install.sh | bash
 ```
 
-### Option B: Let Claude Do It
-
-Paste this into Claude Code and it handles everything:
-
-```
-Set up the FlowCV MCP server from this repo. Run ./setup.sh to build the server and install the
-Claude Code skill. I'll provide my flowcvsidapp cookie when prompted. After setup, test the
-connection with flowcv_get_user and flowcv_list_resumes, then show me what tools are available.
-```
-
-See [SETUP_PROMPT.md](SETUP_PROMPT.md) for more detailed prompts.
-
-### Option C: Manual Setup
-
-#### 1. Clone & Build
+Then authenticate:
 
 ```bash
-git clone https://github.com/EhsanulHaqueSiam/flowcv-mcp.git
-cd flowcv-mcp
-npm install
-npm run build
+flowcv login    # Opens Chrome, extracts cookie automatically
 ```
 
-#### 2. Install the Claude Code Skill
+**Or let Claude Code do it** — paste this into Claude Code:
 
-```bash
-cp -r skill/ ~/.claude/skills/flowcv/
+```
+Install the FlowCV CLI: clone https://github.com/EhsanulHaqueSiam/flowcv-mcp, run ./setup.sh to
+build and link the CLI, then run "flowcv login" to authenticate me.
 ```
 
-#### 3. Get Your Session Cookie
-
-FlowCV has no public API — this server uses your session cookie for auth.
-
-1. Go to [app.flowcv.com](https://app.flowcv.com) and log in
-2. Open DevTools (`F12`) → **Application** → **Cookies** → `app.flowcv.com`
-3. Find `flowcvsidapp` and copy its **Value** (starts with `s%3A...`)
-
-#### 4. Configure MCP
-
-Add to your project's `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "flowcv": {
-      "command": "node",
-      "args": ["/absolute/path/to/flowcv-mcp/dist/index.js"],
-      "env": {
-        "FLOWCV_SESSION_COOKIE": "s%3Ayour-cookie-value-here"
-      }
-    }
-  }
-}
-```
-
-Or add it globally in `~/.claude/settings.json` under `mcpServers`.
-
-### 5. Use It
-
-Ask Claude things like:
-
-- *"List my FlowCV resumes"*
-- *"Add a new skill 'TypeScript' with expert level to my resume"*
-- *"Change the font to Inter and accent color to blue"*
-- *"Download my resume as PDF"*
-- *"Create a cover letter for the Software Engineer position at Google"*
-
-## What Gets Installed
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| MCP Server | `./dist/index.js` | The 49-tool server that talks to FlowCV |
-| MCP Config | `./.mcp.json` | Tells Claude Code how to start the server |
-| Claude Skill | `~/.claude/skills/flowcv/` | Teaches Claude the API, customization paths, and workflows |
-
-The **skill** gives Claude built-in knowledge of all FlowCV tools, entry schemas, customization paths, and API endpoints — so it can use the MCP tools effectively without you having to explain the API.
-
-## CLI Tool
-
-The `flowcv` CLI provides the same operations as the MCP server, but as shell commands.
-
-### Install
-
-```bash
-npm install
-npm run build
-npm link    # Makes `flowcv` available globally
-```
-
-### Login
-
-```bash
-flowcv login           # Opens Chrome, extracts cookie automatically
-flowcv login --paste   # Manual cookie paste mode
-```
-
-### Usage Examples
+### CLI Usage
 
 ```bash
 flowcv resume list                    # List all resumes
@@ -172,12 +75,44 @@ flowcv design set <id> font.fontFamily "Inter"
 flowcv design set <id> colors.basic.single "#2563eb"
 
 flowcv letter list                    # List cover letters
-flowcv letter body <id> --html "<p>Dear hiring manager...</p>"
-
 flowcv ai fill "Senior React developer with 5 years experience"
 ```
 
 See [CLI_MANUAL.md](CLI_MANUAL.md) for the full command reference.
+
+## Install the MCP Server
+
+One-liner — installs CLI + MCP server + Claude Code skills:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/EhsanulHaqueSiam/flowcv-mcp/master/install.sh | bash -s -- --mcp
+```
+
+Then authenticate and add the server to Claude Code:
+
+```bash
+flowcv login
+claude mcp add -s user flowcv -- node ~/.local/share/flowcv-mcp/dist/index.js
+```
+
+The MCP server automatically reads your cookie from `~/.config/flowcv/config.json` (set by `flowcv login`), so no env var is needed.
+
+**Or let Claude Code do everything** — paste this:
+
+```
+Install FlowCV MCP server: clone https://github.com/EhsanulHaqueSiam/flowcv-mcp, run
+"./setup.sh --mcp" to build and install skills, then run "flowcv login" to get my cookie,
+then add the MCP server with "claude mcp add". Test with flowcv_get_user and flowcv_list_resumes.
+```
+
+### What Gets Installed
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| CLI | `flowcv` (globally linked) | Terminal commands for FlowCV |
+| CLI Skill | `~/.claude/skills/flowcv-cli/` | Teaches Claude the CLI commands |
+| MCP Server | `~/.local/share/flowcv-mcp/dist/index.js` | 50-tool server for Claude Code |
+| MCP Skill | `~/.claude/skills/flowcv/` | Teaches Claude the MCP tools, schemas, and customization paths |
 
 ## All 49 Tools
 
@@ -358,16 +293,11 @@ Descriptions support HTML: `<p>`, `<strong>`, `<ul><li>`, `<a href>`
 | PDF Download | Watermark | Clean |
 | Web Resume | Yes | Yes |
 
-## Cookie Expiry — Handled Automatically
+## Cookie Expiry
 
-Session cookies expire periodically. When that happens:
+Session cookies expire periodically. When that happens, just run `flowcv login` again. Both the CLI and MCP server read from the same config file, so re-authenticating once fixes both.
 
-1. Any tool call returns a `SESSION_EXPIRED` error with clear instructions
-2. Claude knows to ask you for a fresh cookie (or extract it from Chromium CDP if available)
-3. You paste the new cookie → Claude calls `flowcv_update_cookie` → everything works again, **no server restart needed**
-4. The new cookie is persisted to `.mcp.json` so it survives restarts
-
-The server also works if started **without** a cookie — it just can't make API calls until you provide one via `flowcv_update_cookie`.
+For the MCP server, Claude can also use the `flowcv_update_cookie` tool to hot-swap the cookie at runtime without restarting.
 
 ## Tech Stack
 
