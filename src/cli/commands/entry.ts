@@ -11,7 +11,7 @@ export async function add(ctx: CLIContext): Promise<void> {
   if (!entry.id) entry.id = crypto.randomUUID();
 
   await apiRequest("/api/resumes/save_entry", "PATCH", {
-    ...entry, resumeId: ctx.args[0], sectionId: ctx.args[1],
+    resumeId: ctx.args[0], sectionId: ctx.args[1], entry,
   });
 
   if (ctx.json) printJSON({ success: true, id: entry.id });
@@ -27,7 +27,7 @@ export async function update(ctx: CLIContext): Promise<void> {
   entry.id = ctx.args[2];
 
   await apiRequest("/api/resumes/save_entry", "PATCH", {
-    ...entry, resumeId: ctx.args[0], sectionId: ctx.args[1],
+    resumeId: ctx.args[0], sectionId: ctx.args[1], entry,
   });
 
   if (ctx.json) printJSON({ success: true });

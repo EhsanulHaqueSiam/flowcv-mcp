@@ -91,7 +91,7 @@ export async function loginWithChrome(): Promise<boolean> {
     printInfo("Launching Chrome...");
     launcher = await chromeLauncher.launch({
       startingUrl: "https://app.flowcv.com/app/login",
-      chromeFlags: [`--remote-debugging-port=${CDP_PORT}`],
+      chromeFlags: [`--remote-debugging-port=${CDP_PORT}`, "--no-sandbox"],
     });
 
     console.log("Waiting for you to log in to FlowCV...");

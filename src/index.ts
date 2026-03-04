@@ -453,9 +453,9 @@ Descriptions support HTML: <p>text</p>, <strong>bold</strong>, <ul><li>item</li>
   async ({ resume_id, section_id, entry }) => {
     try {
       await apiRequest("/api/resumes/save_entry", "PATCH", {
-        ...entry,
         resumeId: resume_id,
         sectionId: section_id,
+        entry,
       });
       return { content: [{ type: "text", text: `Entry saved in section "${section_id}".` }] };
     } catch (e) {
